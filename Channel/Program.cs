@@ -8,16 +8,17 @@ using Microsoft.Extensions.Hosting;
 using var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((hostContext, services) =>
     {
-        services.AddSingleton(Channel.CreateUnbounded<string>()); // Channel を Singleton にする
+        //services.AddSingleton<ChannelManager>(); // `IHostedService` で `Channel<T>` を管理
+        //services.AddSingleton(provider => provider.GetRequiredService<ChannelManager>().TaskChannel);
+        //services.AddHostedService<DbPollingService>();
+        //services.AddHostedService<DataProcessingService>();
+
+        services.AddSingleton<ChannelManager>(); // `Singleton` として登録
+        services.AddSingleton(provider => provider.GetRequiredService<ChannelManager>().TaskChannel);
+        services.AddHostedService(provider => provider.GetRequiredService<ChannelManager>()); // `IHostedService` にも登録
         services.AddHostedService<DbPollingService>();
         services.AddHostedService<DataProcessingService>();
     })
     .Build();
-
-//await host.StartAsync();
-
-
-//var provider = services.BuildServiceProvider();
-//var host = provider.GetRequiredService<IHost>();
 
 await host.RunAsync();

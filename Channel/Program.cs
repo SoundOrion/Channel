@@ -8,16 +8,13 @@ using Microsoft.Extensions.Hosting;
 using var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((hostContext, services) =>
     {
-        //services.AddSingleton<ChannelManager>(); // `IHostedService` で `Channel<T>` を管理
-        //services.AddSingleton(provider => provider.GetRequiredService<ChannelManager>().TaskChannel);
-        //services.AddHostedService<DbPollingService>();
-        //services.AddHostedService<DataProcessingService>();
-
-        services.AddSingleton<ChannelManager>(); // `Singleton` として登録
+        services.AddSingleton<ChannelManager>();
         services.AddSingleton(provider => provider.GetRequiredService<ChannelManager>().TaskChannel);
-        services.AddHostedService(provider => provider.GetRequiredService<ChannelManager>()); // `IHostedService` にも登録
+        services.AddSingleton(provider => provider.GetRequiredService<ChannelManager>().CompletionChannel);
+        services.AddHostedService(provider => provider.GetRequiredService<ChannelManager>());
         services.AddHostedService<DbPollingService>();
         services.AddHostedService<DataProcessingService>();
+        services.AddHostedService<ProcessingCompletionNotifierService>(); // 通知用サービス追加
     })
     .Build();
 

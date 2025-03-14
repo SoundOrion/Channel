@@ -8,11 +8,13 @@ using System.Threading.Channels;
 public class DataProcessingService : BackgroundService
 {
     private readonly Channel<string> _channel;
-    private readonly SemaphoreSlim _semaphore = new(5); // 並列数制御
+    private readonly Channel<bool> _completionChannel;
+    private readonly SemaphoreSlim _semaphore = new(5);
 
-    public DataProcessingService(Channel<string> channel)
+    public DataProcessingService(Channel<string> channel, Channel<bool> completionChannel)
     {
         _channel = channel;
+        _completionChannel = completionChannel;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -23,9 +25,10 @@ public class DataProcessingService : BackgroundService
             {
                 await _semaphore.WaitAsync(stoppingToken);
 
-                _ = ProcessDataAsync(stoppingToken).ContinueWith(_ =>
+                _ = ProcessDataAsync(stoppingToken).ContinueWith(async _ =>
                 {
                     _semaphore.Release();
+                    await _completionChannel.Writer.WriteAsync(true, stoppingToken); // 完了通知
                 }, TaskScheduler.Default);
             }
         }
